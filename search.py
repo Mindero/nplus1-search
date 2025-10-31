@@ -2,6 +2,7 @@ from elasticsearch import Elasticsearch
 from normalize_utils import lemmatize_text, clean_text
 from synonyms_utils import load_model, expand_with_model
 from spellcheker_utils import correct_query, load_spellchecker
+import pandas as pd
 
 # Настройки
 ES_URL = "http://localhost:9200"
@@ -35,7 +36,6 @@ def search_news(query: str, size: int = DEFAULT_SIZE):
             "multi_match": {
                 "query": expanded_query,
                 "fields": ["title^3", "subtitle^2", "text"],  # вес полей
-                "fuzziness": "AUTO"  # допускаем опечатки
             }
         },
         "highlight": {
@@ -56,21 +56,32 @@ def print_results(hits):
         print("\nНичего не найдено.")
         return
 
+    rows = []
     print(f"\n Найдено документов: {len(hits)}\n")
     for i, hit in enumerate(hits, 1):
         src = hit["_source"]
-        print(f"{i}. Новость: {src.get('true_title', 'Без названия')}")
-        print(f"   Автор: {src.get('author', 'Неизвестен')}")
-        print(f"   Дата: {src.get('date', '—')}")
-        print(f"   Сложность: {src.get('difficulty', '—')}")
-        print(f"   Теги: {', '.join(src.get('tags', []))}")
+        title = src.get("true_title", "Без названия")
+        url = src.get("url", "")
+        # author = src.get("author", "Неизвестен")
+        # date = src.get("date", "—")
+        # tags = ", ".join(src.get("tags", []))
 
-        if "highlight" in hit:
-            snippet = " ".join(hit["highlight"].get("text", [])[:1])
-            print(f"   Фрагмент: {snippet}")
+        src = hit["_source"]
+        print(f"{i}. Новость: {title}")
+        # print(f"   Автор: {author}")
+        # print(f"   Дата: {date}")
+        # print(f"   Теги: {', '.join(tags)}")
 
-        print(f"   URL: {src.get('url', '')}")
-        print("-" * 100)
+        rows.append({
+            "№": i,
+            "Название": title,
+            "URL": url,
+            # "Автор": author,
+            # "Дата": date,
+            # "Теги": tags,
+        })
+    df = pd.DataFrame(rows)
+    df.to_csv("result-query.csv", index=False)
 
 def main():
     print("Введите запрос для поиска. Для выхода напишите 'exit'.\n")
