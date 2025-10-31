@@ -35,8 +35,10 @@ def correct_query(query: str, spellchecker: SymSpell) -> str:
   """
   Исправляет опечатки в пользовательском запросе.
   """
-  suggestions = spellchecker.lookup_compound(query, max_edit_distance=2)
-  return suggestions[0].term if suggestions else query
+  if len(query) >= 5:
+    suggestions = spellchecker.lookup_compound(query, max_edit_distance=2)
+    return suggestions[0].term if suggestions else query
+  return query
 
 
 if __name__ == '__main__':
