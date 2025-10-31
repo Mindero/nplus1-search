@@ -24,17 +24,24 @@ def build_model():
 def load_model() -> Word2Vec:
   return Word2Vec.load(MODEL_PATH)
 
-def expand_with_model(query_tokens: list[str], model: Word2Vec, topn: int = 3) -> list[str]:
+def expand_with_model(query_tokens: list[str], model: Word2Vec, topn: int = 2) -> list[str]:
   """
   Расширяет список слов по модели Word2Vec.
   Возвращает исходные токены + найденные синонимы.
   """
-  expanded = set(query_tokens)
+  expanded = list(query_tokens)
+  seen = set(query_tokens)
+
   for token in query_tokens:
-      if token in model.wv:
-          similar = [w for w, sim in model.wv.most_similar(token, topn=topn) if sim > 0.7]
-          expanded.update(similar)
-  return list(expanded)
+    if token in model.wv:
+      similar = [
+          w for w, sim in model.wv.most_similar(token, topn=topn)
+          if sim > 0.8 and w not in seen
+      ]
+      expanded.extend(similar)
+      seen.update(similar)
+
+  return expanded
 
 if __name__ == '__main__':
   build_model()
