@@ -37,6 +37,8 @@ def normalize_tags(tags_str: str):
 
 def clean_text(text: str) -> str:
     text = re.sub(r"<[^>]+>", " ", text)  # Убираем HTML
+    # Убираем все цифры
+    text = re.sub(r"\d+", " ", text)
     text = re.sub(r"[^а-яА-ЯёЁa-zA-Z0-9\s]", " ", text)
     text = text.lower()
     text = re.sub(r"\s+", " ", text).strip()
