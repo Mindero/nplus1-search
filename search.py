@@ -2,11 +2,12 @@ from elasticsearch import Elasticsearch
 from normalize_utils import lemmatize_text, clean_text
 from synonyms_utils import load_model, expand_with_model
 from spellcheker_utils import correct_query, load_spellchecker
+# from weight_utils import get_token_weights
 import pandas as pd
 
 # Настройки
 ES_URL = "http://localhost:9200"
-INDEX_NAME = "news"
+INDEX_NAME = "news_extra"
 DEFAULT_SIZE = 10  # количество документов по умолчанию
 
 es = Elasticsearch(ES_URL)
@@ -19,23 +20,42 @@ def search_news(query: str, size: int = DEFAULT_SIZE):
     size: количество документов в выдаче
     return: список найденных документов
     """
-    corrected = correct_query(query, spellchecker)
-    if corrected != query:
-        print(f"Исправлено: «{query}» -> «{corrected}»")
-    query = corrected
-
     query_tokens = lemmatize_text(clean_text(query))
+
+    query_tokens = [correct_query(word, spellchecker) for word in query_tokens]
 
     expanded_tokens = expand_with_model(query_tokens=query_tokens, model=model)
     expanded_query = " ".join(expanded_tokens)
 
     print(f"Расширенный запрос: {expanded_query}\n")
 
+    # query_weights = get_token_weights(expanded_query)
+    # print(f"Веса запроса: {query_weights}")
+
+    # взвешенный запрос
+    # should_queries = []
+    # for token, w in zip(expanded_tokens, query_weights):
+    #     # нормализуем значение
+    #     boost = 1 + 2.5 * min(max(w, 0), 1)
+    #     should_queries.append({
+    #         "multi_match": {
+    #             "query": token,
+    #             "fields": ["title^3", "subtitle^2", "text"],
+    #             "boost": boost
+    #         }
+    #     })
+
+    # body = {
+    #     "query": {"bool": {"should": should_queries}},
+    #     "highlight": {"fields": {"title": {}, "text": {}}},
+    #     "size": size
+    # }
+
     body = {     
         "query": {
             "multi_match": {
                 "query": expanded_query,
-                "fields": ["title^3", "subtitle^2", "text"],  # вес полей
+                "fields": ["title^4", "subtitle^2", "text"],  # вес полей
             }
         },
         "highlight": {
