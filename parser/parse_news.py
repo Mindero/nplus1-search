@@ -97,8 +97,8 @@ def process_batch(urls):
 
 if __name__ == '__main__':
     df = pd.read_csv('news_links.csv')
-    urls = df["url"].sample(n=10_000, random_state=42).tolist()
-    num_workers = min(4, cpu_count())
+    urls = df["url"].tolist()
+    num_workers = min(8, cpu_count())
     chunk_size = len(urls) // num_workers
 
     with Pool(processes=num_workers) as pool:
@@ -108,5 +108,5 @@ if __name__ == '__main__':
     flat_results = [item for sublist in all_results for item in sublist]
 
     out_df = pd.DataFrame(flat_results)
-    out_df.to_csv("news_data.csv", index=False, encoding="utf-8")
+    out_df.to_csv("news_data_extra.csv", index=False, encoding="utf-8")
     logger.info(f"Сохранено {len(flat_results)} записей в news_data.csv")
