@@ -1,13 +1,13 @@
 from elasticsearch import Elasticsearch
 from normalize_utils import lemmatize_text, clean_text
-from synonyms_utils import load_model, expand_with_model, BERT_MODEL
+from synonyms_utils import load_model, expand_with_model, get_sentence_embedding
 from spellcheker_utils import correct_query, load_spellchecker
 # from weight_utils import get_token_weights
 import pandas as pd
 
 # Настройки
 ES_URL = "http://localhost:9200"
-INDEX_NAME = "news_extra_extra2"
+INDEX_NAME = "news_extra_extra3"
 DEFAULT_SIZE = 10  # количество документов по умолчанию
 
 es = Elasticsearch(ES_URL)
@@ -29,18 +29,12 @@ def search_news(query: str, size: int = DEFAULT_SIZE):
 
     print(f"Расширенный запрос: {expanded_query}\n")
 
-    query_vector = BERT_MODEL.encode(expanded_query).tolist()
+    query_vector = get_sentence_embedding([expanded_query])[0].tolist()
     body = {
         "size": size,
         "query": {
             "bool": {
                 "must": [
-                    {
-                        "multi_match": {
-                            "query": expanded_query,
-                            "fields": ["title^4", "subtitle^2", "text"]
-                        }
-                    },
                     {
                         "knn": {
                             "field": "content_vector",
@@ -48,7 +42,14 @@ def search_news(query: str, size: int = DEFAULT_SIZE):
                             "k": 3 * size,
                             "num_candidates": 10 * size
                         }
-                    }
+                    },
+                    {
+                        "multi_match": {
+                            "query": expanded_query,
+                            "fields": ["title^4", "subtitle^2", "text"]
+                        }
+                    },
+                    
                 ],
             }
         },
