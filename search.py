@@ -1,13 +1,13 @@
 from elasticsearch import Elasticsearch
 from normalize_utils import lemmatize_text, clean_text
-from synonyms_utils import load_model, expand_with_model
+from synonyms_utils import load_model, expand_with_model, BERT_MODEL
 from spellcheker_utils import correct_query, load_spellchecker
 # from weight_utils import get_token_weights
 import pandas as pd
 
 # Настройки
 ES_URL = "http://localhost:9200"
-INDEX_NAME = "news_extra"
+INDEX_NAME = "news_extra_extra2"
 DEFAULT_SIZE = 10  # количество документов по умолчанию
 
 es = Elasticsearch(ES_URL)
@@ -29,42 +29,30 @@ def search_news(query: str, size: int = DEFAULT_SIZE):
 
     print(f"Расширенный запрос: {expanded_query}\n")
 
-    # query_weights = get_token_weights(expanded_query)
-    # print(f"Веса запроса: {query_weights}")
-
-    # взвешенный запрос
-    # should_queries = []
-    # for token, w in zip(expanded_tokens, query_weights):
-    #     # нормализуем значение
-    #     boost = 1 + 2.5 * min(max(w, 0), 1)
-    #     should_queries.append({
-    #         "multi_match": {
-    #             "query": token,
-    #             "fields": ["title^3", "subtitle^2", "text"],
-    #             "boost": boost
-    #         }
-    #     })
-
-    # body = {
-    #     "query": {"bool": {"should": should_queries}},
-    #     "highlight": {"fields": {"title": {}, "text": {}}},
-    #     "size": size
-    # }
-
-    body = {     
+    query_vector = BERT_MODEL.encode(expanded_query).tolist()
+    body = {
+        "size": size,
         "query": {
-            "multi_match": {
-                "query": expanded_query,
-                "fields": ["title^4", "subtitle^2", "text"],  # вес полей
+            "bool": {
+                "must": [
+                    {
+                        "multi_match": {
+                            "query": expanded_query,
+                            "fields": ["title^4", "subtitle^2", "text"]
+                        }
+                    },
+                    {
+                        "knn": {
+                            "field": "content_vector",
+                            "query_vector": query_vector,
+                            "k": 3 * size,
+                            "num_candidates": 10 * size
+                        }
+                    }
+                ],
             }
         },
-        "highlight": {
-            "fields": {
-                "title": {},
-                "text": {}
-            }
-        },
-        "size": size
+        "_source": ["true_title", "url"]
     }
 
     response = es.search(index=INDEX_NAME, body=body)
