@@ -34,19 +34,20 @@ def search_news(query: str, size: int = DEFAULT_SIZE):
         "size": size,
         "query": {
             "bool": {
-                "must": [
+                "should": [
                     {
                         "knn": {
                             "field": "content_vector",
                             "query_vector": query_vector,
-                            "k": 3 * size,
-                            "num_candidates": 10 * size
+                            "k": 2 * size,
+                            "num_candidates": 5 * size
                         }
                     },
                     {
                         "multi_match": {
                             "query": expanded_query,
-                            "fields": ["title^4", "subtitle^2", "text"]
+                            "fields": ["title^3", "subtitle^2", "text"],
+                            "type": "most_fields"
                         }
                     },
                     
