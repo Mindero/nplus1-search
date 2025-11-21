@@ -1,0 +1,7 @@
+constants.py
+*.csv
+*.pkl
+*.zip
+*.model*
+*.npy
+*.txt

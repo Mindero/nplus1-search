@@ -2,6 +2,7 @@ from elasticsearch import Elasticsearch
 from normalize_utils import lemmatize_text, clean_text
 from synonyms_utils import load_model, expand_with_model, get_sentence_embedding
 from spellcheker_utils import correct_query, load_spellchecker
+from ml_train import load_model_lr, rerank_results_with_lr
 # from weight_utils import get_token_weights
 import pandas as pd
 
@@ -13,6 +14,7 @@ DEFAULT_SIZE = 10  # количество документов по умолча
 es = Elasticsearch(ES_URL)
 model = load_model() # модель для извлечения синонимов
 spellchecker = load_spellchecker()
+model_lr = load_model_lr()
 
 def search_news(query: str, size: int = DEFAULT_SIZE):
     """
@@ -27,7 +29,7 @@ def search_news(query: str, size: int = DEFAULT_SIZE):
     expanded_tokens = expand_with_model(query_tokens=query_tokens, model=model)
     expanded_query = " ".join(expanded_tokens)
 
-    print(f"Расширенный запрос: {expanded_query}\n")
+    # print(f"Расширенный запрос: {expanded_query}\n")
 
     query_vector = get_sentence_embedding([expanded_query])[0].tolist()
     body = {
@@ -59,6 +61,7 @@ def search_news(query: str, size: int = DEFAULT_SIZE):
 
     response = es.search(index=INDEX_NAME, body=body)
     hits = response["hits"]["hits"]
+    hits = rerank_results_with_lr(query = expanded_query, hits = hits, model_lr=model_lr)
     return hits
 
 def print_results(hits):
