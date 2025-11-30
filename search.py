@@ -3,7 +3,7 @@ from normalize_utils import lemmatize_text, clean_text
 from synonyms_utils import load_model, expand_with_model, get_sentence_embedding
 from spellcheker_utils import correct_query, load_spellchecker
 from ml_train import load_model_lr, rerank_results_with_lr
-# from weight_utils import get_token_weights
+import colbert_service.colbert_reranker as colbert_reranker
 import pandas as pd
 
 # Настройки
@@ -33,7 +33,7 @@ def search_news(query: str, size: int = DEFAULT_SIZE):
 
     query_vector = get_sentence_embedding([expanded_query])[0].tolist()
     body = {
-        "size": size,
+        "size": 3 * size,
         "query": {
             "bool": {
                 "should": [
@@ -56,13 +56,15 @@ def search_news(query: str, size: int = DEFAULT_SIZE):
                 ],
             }
         },
-        "_source": ["true_title", "url"]
+        "_source": ["true_title", "url", "text"]
     }
 
     response = es.search(index=INDEX_NAME, body=body)
     hits = response["hits"]["hits"]
     hits = rerank_results_with_lr(query = expanded_query, hits = hits, model_lr=model_lr)
-    return hits
+    return hits[:10]
+    # ranked_ids = colbert_reranker.rerank(query=query, documents=[hit["_source"].get("true_title", "Без названия") for hit in hits])
+    # return [hits[i] for i in ranked_ids][:10]
 
 def print_results(hits):
     if not hits:
