@@ -1,7 +1,8 @@
 from pylate import models, rank
 
 print("Importing ColBert model...")
-model = models.ColBERT(model_name_or_path='colbert_service\output\colbert-ruBert-v1\checkpoint-192')
+# model = models.ColBERT(model_name_or_path='colbert_service\output\colbert-ruBert-v1\checkpoint-192')
+model = models.ColBERT(model_name_or_path='ai-forever/ruBert-base')
 print("Import of ColBert model successfull")
 
 def rerank(query: str, documents: list[str]):

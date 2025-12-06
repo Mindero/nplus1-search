@@ -61,10 +61,10 @@ def search_news(query: str, size: int = DEFAULT_SIZE):
 
     response = es.search(index=INDEX_NAME, body=body)
     hits = response["hits"]["hits"]
-    hits = rerank_results_with_lr(query = expanded_query, hits = hits, model_lr=model_lr)
-    return hits[:10]
-    # ranked_ids = colbert_reranker.rerank(query=query, documents=[hit["_source"].get("true_title", "Без названия") for hit in hits])
-    # return [hits[i] for i in ranked_ids][:10]
+    # hits = rerank_results_with_lr(query = expanded_query, hits = hits, model_lr=model_lr)
+    # return hits[:10]
+    ranked_ids = colbert_reranker.rerank(query=query, documents=[hit["_source"].get("true_title", "Без названия") for hit in hits])
+    return [hits[i] for i in ranked_ids][:10]
 
 def print_results(hits):
     if not hits:
